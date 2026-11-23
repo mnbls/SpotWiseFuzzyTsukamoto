@@ -4,7 +4,7 @@
 
 ## Struktur
 - **Beranda** (Vite + React + TS + Tailwind v4): `index.html`, `src/` (hero 3D `src/components/ui/syntra-hero.tsx`, tombol Mulai di `src/demo.tsx`). Dibuild ke GitHub Pages lewat `.github/workflows/deploy.yml` (Source Pages harus **GitHub Actions**)
-- **Aplikasi + perhitungan** (Python, Streamlit): `app.py` (antarmuka: upload, lokasi, mode harga, filter, tabel, peta, rincian; tema krem/oranye sama dengan beranda lewat `.streamlit/config.toml` + CSS di `app.py`, logo `logo.svg`), `fuzzy_core.py` (Haversine + `tsukamoto_tempat()`), `requirements.txt`
+- **Aplikasi + perhitungan** (Python, Streamlit): `app.py` (antarmuka: upload, lokasi, mode harga, filter, tabel, peta, rincian; tema krem/oranye sama dengan beranda lewat `.streamlit/config.toml` + CSS di `app.py`, logo `logo.svg`; lokasi bisa diketik atau dipilih di peta lewat toggle "Pilih titik di peta" (folium + streamlit-folium); tabel hasil di `tabel.py`), `fuzzy_core.py` (Haversine + `tsukamoto_tempat()`), `requirements.txt`
 
 ## Alur
 Beranda → tombol **Mulai** → aplikasi Streamlit (upload Excel → lokasi & preferensi → hasil).

@@ -1,8 +1,12 @@
 import base64
+from urllib.parse import quote_plus
 
+import folium
 import pandas as pd
 import streamlit as st
+from streamlit_folium import st_folium
 from fuzzy_core import RULES, haversine, tsukamoto_tempat
+from tabel import tabel_hasil
 
 st.set_page_config(page_title="SpotWise – Rekomendasi Tempat", page_icon="logo.svg", layout="wide")
 
@@ -56,6 +60,14 @@ def muat_data(sumber):
     df["kecamatan"] = df["kecamatan"].fillna("Tidak diketahui")
     utama = df["kategori"].isin(["Kedai Kopi", "Kafe"])
     df["jenis"] = df["kategori"].where(utama, "Lainnya")
+    # Kolom link_maps di Excel hanya berisi teks "Buka di Maps". Tautan dibentuk dari nama + alamat
+    # supaya Google Maps langsung membuka tempatnya, bukan sekadar titik koordinat.
+    alamat = df["alamat"].fillna("") if "alamat" in df else pd.Series([""] * len(df), index=df.index)
+    kueri = (df["nama_maps"].astype(str) + " " + alamat.astype(str)).str.strip()
+    df["kueri_maps"] = kueri.map(quote_plus)
+    df["link_maps"] = [
+        "https://www.google.com/maps/search/?api=1&query=" + q for q in df["kueri_maps"]
+    ]
     return df
 
 
@@ -73,9 +85,15 @@ if kurang:
     st.stop()
 
 # ---------- Sidebar: input & filter ----------
+st.session_state.setdefault("lat", -7.7600)
+st.session_state.setdefault("lng", 110.4090)
+if "titik_baru" in st.session_state:  # titik dari klik peta, diterapkan sebelum kolom input dibuat
+    st.session_state["lat"], st.session_state["lng"] = st.session_state.pop("titik_baru")
+
 st.sidebar.header("Lokasi kamu")
-lat = st.sidebar.number_input("Latitude", value=-7.7600, format="%.6f")
-lng = st.sidebar.number_input("Longitude", value=110.4090, format="%.6f")
+lat = st.sidebar.number_input("Latitude", key="lat", format="%.6f", step=0.001)
+lng = st.sidebar.number_input("Longitude", key="lng", format="%.6f", step=0.001)
+pilih_peta = st.sidebar.toggle("Pilih titik di peta", help="Klik peta untuk memindahkan lokasimu.")
 
 st.sidebar.header("Preferensi (input fuzzy)")
 hemat = st.sidebar.radio("Soal harga", ["Hemat", "Bebas"]) == "Hemat"
@@ -85,6 +103,25 @@ kec = st.sidebar.multiselect("Kecamatan", sorted(df["kecamatan"].unique()))
 jenis = st.sidebar.multiselect("Jenis tempat", ["Kedai Kopi", "Kafe", "Lainnya"])
 maks_km = st.sidebar.slider("Jarak maksimum (km)", 1, 20, 10)
 hanya_24 = st.sidebar.checkbox("Hanya yang buka 24 jam")
+
+# ---------- Pilih titik di peta ----------
+if pilih_peta:
+    st.subheader("Pilih lokasimu di peta")
+    st.caption("Klik di peta untuk menaruh titikmu. Titik abu-abu adalah tempat dari data.")
+    peta = folium.Map(location=[lat, lng], zoom_start=13, control_scale=True)
+    for r in df.itertuples():
+        folium.CircleMarker(
+            [r.lat, r.lng], radius=4, color="#74716c", weight=1, fill=True,
+            fill_color="#74716c", fill_opacity=0.6, tooltip=str(r.nama_maps),
+        ).add_to(peta)
+    folium.Marker([lat, lng], tooltip="Lokasimu", icon=folium.Icon(color="orange", icon="user", prefix="fa")).add_to(peta)
+    klik = st_folium(peta, height=380, use_container_width=True, returned_objects=["last_clicked"], key="peta_pilih")
+    if klik and klik.get("last_clicked"):
+        titik = (round(klik["last_clicked"]["lat"], 6), round(klik["last_clicked"]["lng"], 6))
+        if titik != st.session_state.get("_klik_terakhir"):
+            st.session_state["_klik_terakhir"] = titik
+            st.session_state["titik_baru"] = titik
+            st.rerun()
 
 # ---------- Proses ----------
 df["jarak_km"] = [haversine(lat, lng, a, b) for a, b in zip(df["lat"], df["lng"])]
@@ -104,18 +141,30 @@ hasil = hasil.sort_values("skor", ascending=False)
 
 # ---------- Tampilan ----------
 st.subheader(f"{len(hasil)} tempat ditemukan")
-kolom = ["nama_maps", "kecamatan", "harga_label", "rating", "jarak_km", "skor", "link_maps"]
-st.dataframe(
-    hasil[kolom].head(20),
-    column_config={
-        "skor": st.column_config.ProgressColumn(
-            "Skor", min_value=0, max_value=100, format="%.1f"),
-        "jarak_km": st.column_config.NumberColumn("Jarak (km)", format="%.2f"),
-        "link_maps": st.column_config.LinkColumn("Peta", display_text="Buka"),
-    },
-    hide_index=True,
-    width="stretch",
+hasil = hasil.assign(
+    link_rute=[
+        f"https://www.google.com/maps/dir/?api=1&origin={lat},{lng}&destination={q}&travelmode=driving"
+        for q in hasil["kueri_maps"]
+    ]
 )
+
+# Rekomendasi teratas: langsung buka tempatnya atau petunjuk arah ke sana
+if len(hasil):
+    t = hasil.iloc[0]
+    with st.container(border=True):
+        kiri, kanan = st.columns([3, 2], vertical_alignment="center")
+        with kiri:
+            st.markdown(f"**Rekomendasi #1 — {t.nama_maps}**")
+            st.caption(
+                f"{t.kecamatan} · {t.harga_label} · rating {t.rating} · "
+                f"{t.jarak_km:.2f} km dari lokasimu · skor {t.skor:.1f}"
+            )
+        with kanan:
+            b1, b2 = st.columns(2)
+            b1.link_button("Buka tempat", t.link_maps, width="stretch")
+            b2.link_button("Rute ke sini", t.link_rute, type="primary", width="stretch")
+
+tabel_hasil(hasil.head(20))
 st.map(hasil.head(20).rename(columns={"lng": "lon"}), latitude="lat", longitude="lon", color="#ff7a2f")
 
 # ---------- Rincian perhitungan ----------
