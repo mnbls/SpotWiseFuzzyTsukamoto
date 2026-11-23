@@ -1,9 +1,51 @@
+import base64
+
 import pandas as pd
 import streamlit as st
 from fuzzy_core import RULES, haversine, tsukamoto_tempat
 
-st.set_page_config(page_title="SpotWise – Rekomendasi Tempat", page_icon="📍", layout="wide")
-st.title("SpotWise – Rekomendasi Tempat Terbaik (Fuzzy Tsukamoto)")
+st.set_page_config(page_title="SpotWise – Rekomendasi Tempat", page_icon="logo.svg", layout="wide")
+
+# ---------- Tema: sama dengan beranda (krem hangat, tinta hitam, aksen oranye) ----------
+st.markdown(
+    """
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Onest:wght@400;500;600&display=swap');
+html, body, .stApp, .stApp p, .stApp label, .stApp button, .stApp input, .stApp h1, .stApp h2, .stApp h3,
+.stApp span:not([data-testid="stIconMaterial"]) { font-family: 'Onest', sans-serif; }
+.stApp { background: #f8f7f3; }
+#MainMenu, footer, [data-testid="stDeployButton"] { display: none; }
+[data-testid="stSidebar"] { background: #efede6; border-right: 1px solid #d9d6d0; }
+.block-container { max-width: 1280px; padding-top: 2rem; }
+.sw-brand { display: flex; align-items: center; gap: 12px; margin-bottom: 1.25rem; }
+.sw-brand img { width: 40px; height: 40px; }
+.sw-brand span { font-size: 1.8rem; font-weight: 500; letter-spacing: -0.04em; color: #171717; }
+.sw-eyebrow { display: flex; align-items: center; gap: 10px; margin: 0 0 .6rem; font-size: .75rem;
+  font-weight: 500; letter-spacing: .22em; text-transform: uppercase; color: #74716c; }
+.sw-eyebrow::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: #ff7a2f; }
+h1 { font-weight: 400 !important; letter-spacing: -0.03em !important; line-height: 1.1 !important; color: #171717; }
+h1 em { font-style: normal; color: #ff7a2f; }
+h2, h3 { font-weight: 500 !important; letter-spacing: -0.02em !important; }
+[data-testid="stDataFrame"], [data-testid="stExpander"], [data-testid="stFileUploader"] section {
+  border-radius: 20px; border: 1px solid #d9d6d0; background: #fff; overflow: hidden; }
+[data-testid="stFileUploader"] section { background: #f8f7f3; }
+.stButton > button, [data-testid="stFileUploader"] button { border-radius: 999px; border: 1px solid #d9d6d0; }
+</style>
+""",
+    unsafe_allow_html=True,
+)
+
+with open("logo.svg", encoding="utf-8") as f:
+    _logo = f.read()
+_logo_uri = "data:image/svg+xml;base64," + base64.b64encode(_logo.encode()).decode()
+st.markdown(
+    f'<div class="sw-brand"><img src="{_logo_uri}" alt=""><span>SpotWise</span></div>'
+    '<p class="sw-eyebrow">Sistem Pendukung Keputusan</p>',
+    unsafe_allow_html=True,
+)
+st.markdown(
+    "# Temukan tempat terbaik dengan Fuzzy <em>Tsukamoto.</em>", unsafe_allow_html=True
+)
 
 WAJIB = ["nama_maps", "rating", "lat", "lng", "mu_murah", "mu_sedang", "mu_mahal"]
 
@@ -74,7 +116,7 @@ st.dataframe(
     hide_index=True,
     width="stretch",
 )
-st.map(hasil.head(20).rename(columns={"lng": "lon"}), latitude="lat", longitude="lon")
+st.map(hasil.head(20).rename(columns={"lng": "lon"}), latitude="lat", longitude="lon", color="#ff7a2f")
 
 # ---------- Rincian perhitungan ----------
 if len(hasil):
