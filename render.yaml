@@ -1,0 +1,16 @@
+# Blueprint Render: https://render.com/docs/blueprint-spec
+# Dibuat dari repo ini: New → Blueprint. Set CORS_ORIGINS ke alamat web (GitHub Pages).
+services:
+  - type: web
+    name: jangkar-coffee-api
+    runtime: python
+    rootDir: backend
+    plan: free
+    buildCommand: pip install -r requirements-api.txt
+    startCommand: uvicorn api:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /api/health
+    envVars:
+      - key: PYTHON_VERSION
+        value: "3.12.7"
+      - key: CORS_ORIGINS
+        value: https://mnbls.github.io

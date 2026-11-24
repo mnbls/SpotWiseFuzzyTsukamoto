@@ -1,0 +1,11 @@
+__pycache__/
+*.pyc
+tests/
+.streamlit/
+app.py
+carousel.py
+tabel.py
+logo.svg
+requirements.txt
+requirements-dev.txt
+Dockerfile

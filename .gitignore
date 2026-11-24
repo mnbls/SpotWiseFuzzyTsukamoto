@@ -4,5 +4,7 @@ __pycache__/
 node_modules/
 dist/
 *.xlsx
+# Data contoh untuk server: satu Excel dan foto-fotonya ikut git.
+!backend/data/coffee-depok-sleman.xlsx
 .claude/
 .impeccable/

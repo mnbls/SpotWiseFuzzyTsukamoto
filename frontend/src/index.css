@@ -1,0 +1,23 @@
+@import 'tailwindcss';
+
+html,
+body {
+  margin: 0;
+  background: #f8f7f3;
+}
+
+/* Palet dan font untuk halaman aplikasi (sama dengan beranda). */
+@theme {
+  --color-krem: #f8f7f3;
+  --color-panel: #efede6;
+  --color-tinta: #171717;
+  --color-abu: #74716c;
+  --color-garis: #d9d6d0;
+  --color-aksen: #ff7a2f;
+  --font-sans: 'Onest', ui-sans-serif, system-ui, sans-serif;
+}
+
+.leaflet-container {
+  font-family: inherit;
+  border-radius: inherit;
+}
