@@ -20,11 +20,13 @@ Data kafe (scraping Google Maps → .xlsx + foto)
 ├── backend/                 Python
 │   ├── fuzzy_core.py        inti fuzzy (tanpa dependensi UI): Haversine, keanggotaan harga, Tsukamoto
 │   ├── rekomendasi.py       alur data → skor: baca Excel, hitung, saring, rincian perhitungan
-│   ├── api.py               API FastAPI (dipakai web React)
+│   ├── layanan.py           logika API tanpa kerangka web (validasi, unggahan, bentuk JSON)
+│   ├── api.py               API FastAPI untuk lokal (memakai layanan.py)
+│   ├── wsgi_flask.py        API yang sama dalam Flask (WSGI murni) untuk PythonAnywhere
 │   ├── app.py               aplikasi Streamlit lama (cadangan, memakai rekomendasi.py yang sama)
 │   ├── carousel.py, tabel.py, logo.svg, .streamlit/   khusus aplikasi Streamlit
 │   ├── requirements-api.txt dependensi API saja; requirements.txt = API + Streamlit; requirements-dev.txt = tes
-│   ├── Dockerfile           image API untuk Hugging Face Spaces, Fly.io, dsb.
+│   ├── Dockerfile           image API untuk layanan berbasis Docker (Fly.io, Render, dsb.)
 │   ├── data/                satu Excel contoh dan foto hasil scraping (ikut git, lihat data/README.md)
 │   └── tests/               tes unit: fuzzy_core dan API
 ├── frontend/                Web: Vite + React 19 + TypeScript + Tailwind v4
@@ -111,13 +113,32 @@ Rumus lengkap: [docs/METODE.md](docs/METODE.md).
 
 - **Web:** GitHub Pages lewat GitHub Actions. Di pengaturan repo, **Pages → Source** harus **GitHub Actions**.
   Isi variabel repo `API_URL` (Settings → Secrets and variables → Actions → Variables) dengan alamat backend; nilainya dipakai saat build sebagai `VITE_API_URL`.
-- **Backend:** salah satu cara berikut. Semuanya butuh akun di layanan itu, jadi dibuat sendiri oleh pemilik repo.
-  - **Render:** New → Blueprint, pilih repo ini. Konfigurasinya ada di `render.yaml` (folder `backend/`, `requirements-api.txt`, health check `/api/health`).
-  - **Hugging Face Spaces atau Fly.io:** pakai `backend/Dockerfile` (port 7860 bawaan, bisa diganti lewat `PORT`).
-  - **Lainnya:** dari folder `backend/`, `pip install -r requirements-api.txt`, lalu `uvicorn api:app --host 0.0.0.0 --port $PORT`.
+- **Backend (yang dipakai): PythonAnywhere** di https://mnbls.pythonanywhere.com, gratis tanpa kartu kredit.
+  Server web PythonAnywhere tidak menjalankan thread Python, jadi FastAPI (lewat adapter ASGI→WSGI) macet di sana.
+  Karena itu dipakai `wsgi_flask.py`: endpoint dan bentuk JSON-nya sama dengan `api.py`, logikanya sama-sama dari `layanan.py`.
+  1. Daftar akun Beginner di https://www.pythonanywhere.com/registration/register/beginner/
+  2. **Consoles → Bash**:
+     ```bash
+     git clone https://github.com/mnbls/SpotWiseFuzzyTsukamoto.git jangkar
+     python3.11 -m pip install --user flask pandas openpyxl
+     ```
+  3. **Web → Add a new web app → Next → Manual configuration → Python 3.11 → Next.**
+  4. Ganti seluruh isi **WSGI configuration file** (`/var/www/<username>_pythonanywhere_com_wsgi.py`) dengan:
+     ```python
+     import sys
+     sys.path.insert(0, "/home/mnbls/jangkar/backend")
+     from wsgi_flask import app as application  # noqa: E402,F401
+     ```
+  5. Klik **Reload** di tab Web, lalu cek `https://mnbls.pythonanywhere.com/api/health`.
+  6. Memperbarui kode: di Bash console `cd ~/jangkar && git pull`, lalu **Reload**.
+
+  Akun gratis harus diperpanjang dengan tombol **Run until 3 months from today** di tab Web, kalau tidak web app dimatikan.
+  Error saat jalan terlihat di **Error log** di tab Web.
+- **Backend (alternatif berbayar atau butuh kartu):** Render memakai `render.yaml`; layanan berbasis Docker memakai `backend/Dockerfile`.
+  Hugging Face Spaces kini mewajibkan paket berbayar untuk Space Docker. Cara umum lainnya: dari folder `backend/`, `pip install -r requirements-api.txt`, lalu `uvicorn api:app --host 0.0.0.0 --port $PORT`.
 
   Set `CORS_ORIGINS` ke alamat web (mis. `https://mnbls.github.io`), lalu isi variabel repo `API_URL` dengan alamat backend dan jalankan ulang workflow web.
-  `render.yaml` dan `Dockerfile` belum pernah dijalankan di layanannya; cek log build pada deploy pertama.
+  Versi Flask diuji di lokal dengan server WSGI satu-thread; `render.yaml` dan `Dockerfile` belum pernah dijalankan di layanannya.
 - **Data di server:** `backend/data/coffee-depok-sleman.xlsx` dan `backend/data/foto/` ikut git, jadi server langsung berisi data contoh.
   Untuk data lain, ganti berkas itu, atau arahkan `DATA_DIR` ke folder yang berisi Excel dan subfolder `foto/`. Tanpa data bawaan, web meminta pengguna mengunggah Excel.
 

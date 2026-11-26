@@ -5,7 +5,7 @@ WORKDIR /app
 COPY requirements-api.txt .
 RUN pip install --no-cache-dir -r requirements-api.txt
 
-COPY fuzzy_core.py rekomendasi.py api.py ./
+COPY fuzzy_core.py rekomendasi.py layanan.py api.py wsgi_flask.py ./
 # Data bawaan (opsional). Tanpa folder data, web meminta pengguna mengunggah Excel.
 COPY data ./data
 

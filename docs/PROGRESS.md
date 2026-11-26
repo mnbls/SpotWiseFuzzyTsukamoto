@@ -18,14 +18,14 @@ Cara menjalankan dan gambaran proyek ada di [README](../README.md); rumus ada di
 
 ## Belum
 
-- [ ] Commit dan push ke repo `mnbls/SpotWiseFuzzyTsukamoto`
-- [ ] Deploy backend (butuh akun pemilik repo): `render.yaml` dan `backend/Dockerfile` sudah disiapkan tetapi belum pernah dijalankan di layanannya. Setelah itu isi variabel repo `API_URL` dan `CORS_ORIGINS` di server
-- [ ] Set **Pages → Source = GitHub Actions** di repo, lalu jalankan ulang workflow
+- [ ] Isi variabel repo `API_URL` dengan `https://mnbls.pythonanywhere.com` dan jalankan ulang workflow web
+- [ ] Perpanjang web app PythonAnywhere tiap 3 bulan (tombol di tab Web)
 - [ ] Ganti nama repo dari `SpotWiseFuzzyTsukamoto` ke nama baru
 - [ ] Hapus `backend/app.py` dan berkas Streamlit bila versi web sudah dipakai penuh
 
 ## Keputusan
 
+- **Hosting backend:** PythonAnywhere (gratis, tanpa kartu kredit) dengan `wsgi_flask.py`. Render minta kartu, Hugging Face Spaces kini mewajibkan paket berbayar untuk Space Docker, dan FastAPI lewat adapter `a2wsgi` macet di PythonAnywhere karena server webnya tidak menjalankan thread. Logika API ada di `layanan.py` sehingga FastAPI (lokal) dan Flask (server) membalas sama; tes API menjalankan kasus yang sama ke keduanya.
 - **Model:** model dari zip dosen (3 masukan, 5 aturan, konsekuen monoton), bukan model 4 kriteria berbobot dari repo SpotWise lama.
 - **Perhitungan wajib Python:** ketentuan tugas. Frontend tidak menghitung skor; ia hanya mengirim input dan menampilkan hasil dari API.
 - **Satu web:** beranda dan aplikasi dalam satu proyek React, dipisah lewat hash (`#/`, `#/app`) supaya jalan di GitHub Pages tanpa pengaturan server.
